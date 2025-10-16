@@ -64,6 +64,13 @@ const validateEditProfile = [
   // Bio (optional)
   body("bio").optional().isString().trim(),
 
+  // isPrivate (optional, boolean)
+  body("isPrivate")
+    .optional()
+    .isBoolean()
+    .withMessage("isPrivate must be a boolean")
+    .toBoolean(),
+
   // Profile picture will be handled by multer upload
 ];
 
@@ -112,6 +119,7 @@ router.patch(
           bio: updatedUser.bio,
           profilePicture: updatedUser.profilePicture,
           updatedAt: updatedUser.updatedAt,
+          isPrivate: updatedUser.isPrivate,
         },
       },
     });

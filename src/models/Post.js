@@ -7,6 +7,10 @@ const postSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    isPrivate: {
+      type: Boolean,
+      default: false,
+    },
     title: {
       type: String,
       required: [true, "Title is required"],

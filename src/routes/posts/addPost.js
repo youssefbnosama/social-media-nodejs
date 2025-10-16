@@ -22,7 +22,7 @@ router.post(
       return next(new AppError(errorMessages.join(", "), 400, true));
     }
 
-    const { title, description, image } = req.body;
+    const { title, description, image = null, isPrivate = false } = req.body;
     const userId = req.user._id;
 
     // Create new post
@@ -30,7 +30,8 @@ router.post(
       userId,
       title,
       description,
-      image: image || null,
+      image: image ,
+      isPrivate,
     });
 
     // Save post to database

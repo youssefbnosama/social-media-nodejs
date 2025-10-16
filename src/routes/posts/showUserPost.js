@@ -19,6 +19,19 @@ router.get(
       return next(new AppError("Valid userId is required", 400, true));
     }
 
+    // Fetch user by ID to check privacy and friendship
+    const user = await User.findById(userId).select("isPrivate friends");
+    if (!user) {
+      return next(new AppError("User not found", 404, true));
+    }
+
+    // Privacy check as requested
+    const requesterId = String(req.user?.id || req.user?._id);
+    const isFriend = Array.from(user.friends || []).map(String).includes(requesterId);
+    if (user.isPrivate && !isFriend) {
+      return next(new AppError("This user's profile is private", 403, true));
+    }
+
     // Use aggregation to get user with posts, comments, and likes count
     const result = await User.aggregate([
       // Match the user by ID

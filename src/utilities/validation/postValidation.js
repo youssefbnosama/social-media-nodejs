@@ -35,6 +35,13 @@ export const validatePost = [
     .trim()
     .isLength({ min: 1, max: 500 })
     .withMessage("Image URL must be between 1 and 500 characters"),
+
+  // isPrivate (optional, boolean, default false)
+  body("isPrivate")
+    .optional()
+    .isBoolean()
+    .withMessage("isPrivate must be a boolean")
+    .toBoolean()
 ];
 
 // Validation rules for updating posts (all fields optional)
@@ -68,4 +75,11 @@ export const validatePostUpdate = [
     .trim()
     .isLength({ min: 1, max: 500 })
     .withMessage("Image URL must be between 1 and 500 characters"),
+
+  // isPrivate (optional, boolean)
+  body("isPrivate")
+    .optional()
+    .isBoolean()
+    .withMessage("isPrivate must be a boolean")
+    .toBoolean(),
 ];

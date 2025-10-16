@@ -1,14 +1,17 @@
 import express from "express";
 import mongoose from "mongoose";
 import Post from "../../models/Post.js";
+import User from "../../models/User.js";
 import { tryCatch } from "../../utilities/errorHandling/tryCatch.js";
 import AppError from "../../utilities/errorHandling/classObject.js";
+import { authMiddleware } from "../../utilities/tokens/accessTokenMiddleware.js";
 
 const router = express.Router();
 
 // GET /api/posts/:id - Get single post with likes count and comments
 router.get(
   "/api/posts/:id",
+  authMiddleware,
   tryCatch(async (req, res, next) => {
     const postId = req.params.id;
 
@@ -17,6 +20,32 @@ router.get(
       return next(new AppError("Valid postId is required", 400, true));
     }
 
+    // Fetch post to check privacy
+    const post = await Post.findById(postId).select("isPrivate userId");
+    if (!post) {
+      return next(new AppError("Post not found", 404, true));
+    }
+
+    // Fetch post's author to check their privacy settings
+    const postAuthor = await User.findById(post.userId).select(
+      "isPrivate friends"
+    );
+    if (!postAuthor) {
+      // This case is unlikely if DB is consistent, but good to have
+      return next(new AppError("Post author not found", 404, true));
+    }
+
+    const isPostPrivate = post.isPrivate;
+    const isUserPrivate = postAuthor.isPrivate;
+    const requesterId = req.user._id.toString();
+    const isFriend = postAuthor.friends.some(
+      (id) => id.toString() === requesterId
+    );
+    const isOwner = requesterId === post.userId.toString();
+
+    if (!isOwner && !isFriend && (isUserPrivate || isPostPrivate)) {
+      return next(new AppError("This post is private", 403, true));
+    }
     // Use aggregation to get post with author info, likes count, and comments
     const result = await Post.aggregate([
       // Match the post by ID
@@ -37,15 +66,7 @@ router.get(
           localField: "userId",
           foreignField: "_id",
           as: "author",
-          pipeline: [
-            {
-              $project: {
-                _id: 1,
-                username: 1,
-                profilePicture: 1,
-              },
-            },
-          ],
+          pipeline: [{ $project: { _id: 1, username: 1, profilePicture: 1 } }],
         },
       },
 
@@ -75,7 +96,7 @@ router.get(
                 ],
               },
             },
-            // Add isEdited field to commentsءذ
+            // Add isEdited field to comments
             {
               $addFields: {
                 userId: { $arrayElemAt: ["$user", 0] },
