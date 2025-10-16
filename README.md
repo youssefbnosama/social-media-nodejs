@@ -7,6 +7,7 @@ A Node.js/Express REST API for a simple social media platform. It supports user 
 - User authentication with access/refresh tokens stored as HttpOnly cookies
 - Register, login, logout, and refresh access tokens
 - User profile retrieval and editing (including profile picture upload to Cloudinary)
+- **Privacy Controls**: Users can set their profile to private, and individual posts can be marked as private. Access is restricted to the owner and their friends.
 - Friend request workflow (send/cancel request, accept/decline)
 - CRUD for posts (create, edit with optional image upload, view, delete)
 - Likes (toggle like/unlike on a post)
@@ -101,16 +102,17 @@ Create a .env file in the project root with the following variables:
 - CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 
 Notes:
+
 - CORS is configured to allow origin http://localhost:5173 with credentials. If your frontend runs elsewhere, update the cors configuration in app.js.
 - MongoDB URI is currently hardcoded to mongodb://127.0.0.1:27017/social-media in app.js. Adjust as needed.
 
 ## Installation
 
-1) Install dependencies
+1. Install dependencies
 
 - npm install
 
-2) Configure environment
+2. Configure environment
 
 - Create and populate .env as shown above
 - Ensure MongoDB is running locally (or update app.js to use your connection string)
@@ -137,6 +139,7 @@ Server starts on http://localhost:5000 by default.
 ## API Endpoints (Summary)
 
 Auth and Session
+
 - POST /api/register
   - Body (JSON): { username, email, password }
   - Registers a new user
@@ -149,42 +152,49 @@ Auth and Session
   - Requires refreshToken cookie; returns new accessToken cookie
 
 User
+
 - GET /api/profile (auth)
   - Returns authenticated user info and aggregated posts with likesCount and comments
 - PATCH /api/editprofile (auth)
-  - multipart/form-data: optional fields username, email, password, bio; profilePicture as file
+  - multipart/form-data: optional fields `username`, `email`, `password`, `bio`, `isPrivate` (boolean); `profilePicture` as file
   - Updates user profile; if a profile picture is uploaded, it is stored on Cloudinary
 - DELETE /api/deleteuser (auth)
   - Deletes the authenticated user
 
 Friend Requests
+
 - POST /api/sendrequest (auth)
-  - Body (JSON): { friendId }
+  - Body (JSON): `{ friendId }`
   - Sends a new friend request; if already sent, cancels it
 - POST /api/acceptrequest (auth)
-  - Body (JSON): { friendId, status: 'accepted' | 'declined' }
+  - Body (JSON): `{ friendId, status: 'accepted' | 'declined' }`
   - Accepts or declines a pending friend request
 
 Posts
+
 - POST /api/addpost (auth)
-  - Body (JSON): { title, description, image? }
-  - Creates a post; image is an optional URL string here
+  - Body (JSON): `{ title, description, isPrivate? (boolean) }`
+  - Creates a post.
 - PATCH /api/editpost (auth)
-  - multipart/form-data: requires postId; optional title, description; optional image file
+  - multipart/form-data: requires `postId`; optional `title`, `description`, `isPrivate` (boolean); optional `image` file
   - If an image file is provided, it is uploaded to Cloudinary
 - GET /api/getuser/:id (auth)
-  - Returns a specific user with aggregated posts and comments
-- GET /api/posts/:id (public)
-  - Returns a single post with author, likesCount, and comments
+  - Returns a specific user's profile and posts.
+  - If the user's profile is private, it is only accessible to their friends.
+- GET /api/posts/:id (auth)
+  - Returns a single post with author, likesCount, and comments.
+  - If the post is private (or the author's profile is private), it is only accessible to the owner and their friends.
 - DELETE /api/deletepost/:id (auth)
   - Deletes a post you own
 
 Likes
+
 - POST /api/togglelike (auth)
   - Body (JSON): { postId }
   - Toggles like/unlike for the given post
 
 Comments
+
 - POST /api/addcomment (auth)
   - Body (JSON): { postId, value }
   - Adds a new comment
@@ -198,17 +208,22 @@ Comments
 ## Models (Key Fields)
 
 User
+
 - username (unique), email (unique), password (hashed)
 - friends, friendRequests, requestsSent (arrays of User IDs)
 - profilePicture (URL), bio
+- isPrivate (boolean)
 - posts (array of Post IDs)
 
 Post
+
 - userId (User ref), title, description, image (URL)
 - likes (array of User IDs)
+- isPrivate (boolean)
 - comments (array of Comment IDs)
 
 Comment
+
 - value (string)
 - userId (User ref)
 - postId (Post ref)
@@ -216,7 +231,7 @@ Comment
 ## File Uploads
 
 - Multer is configured with memoryStorage and a 5 MB size limit
-- Only image/* mimetypes are accepted
+- Only image/\* mimetypes are accepted
 - Uploaded images are stored under the Cloudinary folder "social_media_uploads"
 
 ## Error Handling
