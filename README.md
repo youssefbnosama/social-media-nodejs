@@ -159,7 +159,7 @@ User
   - multipart/form-data: optional fields `username`, `email`, `password`, `bio`, `isPrivate` (boolean); `profilePicture` as file
   - Updates user profile; if a profile picture is uploaded, it is stored on Cloudinary
 - DELETE /api/deleteuser (auth)
-  - Deletes the authenticated user
+  - Deletes the authenticated user and all associated data, including their posts, comments (both made and received), likes, and removes them from all friend lists.
 
 Friend Requests
 
@@ -185,7 +185,7 @@ Posts
   - Returns a single post with author, likesCount, and comments.
   - If the post is private (or the author's profile is private), it is only accessible to the owner and their friends.
 - DELETE /api/deletepost/:id (auth)
-  - Deletes a post you own
+  - Deletes a post you own, along with all of its associated comments.
 
 Likes
 
