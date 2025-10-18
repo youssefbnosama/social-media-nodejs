@@ -5,6 +5,7 @@ import User from "../../models/User.js";
 import { tryCatch } from "../../utilities/errorHandling/tryCatch.js";
 import AppError from "../../utilities/errorHandling/classObject.js";
 import { authMiddleware } from "../../utilities/tokens/accessTokenMiddleware.js";
+import Comment from "../../models/Comment.js";
 
 const router = express.Router();
 
@@ -46,8 +47,19 @@ router.get(
     if (!isOwner && !isFriend && (isUserPrivate || isPostPrivate)) {
       return next(new AppError("This post is private", 403, true));
     }
-    // Use aggregation to get post with author info, likes count, and comments
-    const result = await Post.aggregate([
+
+    // Pagination for comments
+    const page = +req.query.page || 1;
+    const limit = +req.query.limit || 10;
+    const skip = (page - 1) * limit;
+
+    // Sorting for comments
+    const commentSortField = req.query.commentSort || "createdAt";
+    const commentSortOrder = req.query.commentOrder === "asc" ? 1 : -1;
+    const sortObj = { [commentSortField]: commentSortOrder };
+
+    // First aggregation: Get post details and paginated comments
+    const postResult = await Post.aggregate([
       // Match the post by ID
       { $match: { _id: new mongoose.Types.ObjectId(postId) } },
 
@@ -70,7 +82,7 @@ router.get(
         },
       },
 
-      // Lookup comments with author info
+      // Lookup comments with author info, sorting, and pagination
       {
         $lookup: {
           from: "comments",
@@ -78,25 +90,21 @@ router.get(
           foreignField: "postId",
           as: "comments",
           pipeline: [
-            // Add user info to each comment
+            // Sort, skip, and limit comments for pagination
+            { $sort: sortObj },
+            { $skip: skip },
+            { $limit: limit },
+            // Add user info to each paginated comment
             {
               $lookup: {
                 from: "users",
                 localField: "userId",
                 foreignField: "_id",
                 as: "user",
-                pipeline: [
-                  {
-                    $project: {
-                      _id: 1,
-                      username: 1,
-                      profilePicture: 1,
-                    },
-                  },
-                ],
+                pipeline: [{ $project: { username: 1, profilePicture: 1 } }],
               },
             },
-            // Add isEdited field to comments
+            // Add isEdited field and reshape the comment's user field
             {
               $addFields: {
                 userId: { $arrayElemAt: ["$user", 0] },
@@ -105,16 +113,7 @@ router.get(
             },
             // Remove the temporary user array
             { $unset: "user" },
-            // Sort comments by creation date (newest first)
-            { $sort: { createdAt: -1 } },
           ],
-        },
-      },
-
-      // Reshape the author field
-      {
-        $addFields: {
-          userId: { $arrayElemAt: ["$author", 0] },
         },
       },
 
@@ -139,11 +138,18 @@ router.get(
       },
     ]);
 
-    if (!result || result.length === 0) {
+    // Second, optimized aggregation: Get total comment count
+    const totalComments = await Comment.countDocuments({
+      postId: new mongoose.Types.ObjectId(postId),
+    });
+
+    if (!postResult || postResult.length === 0) {
       return next(new AppError("Post not found", 404, true));
     }
 
-    const postData = result[0];
+    // Combine the results
+    const postData = postResult[0];
+    postData.commentsCount = totalComments;
 
     res.status(200).json({
       success: true,

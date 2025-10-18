@@ -154,7 +154,10 @@ Auth and Session
 User
 
 - GET /api/profile (auth)
-  - Returns authenticated user info and aggregated posts with likesCount and comments
+  - Returns authenticated user info and a paginated list of their posts.
+  - Supports pagination for posts via `?page` and `?limit` query params.
+  - Supports sorting for posts via `?sort` (field name) and `?order` (`asc`/`desc`) query params.
+  - Each post includes `likesCount` and `commentsCount`.
 - PATCH /api/editprofile (auth)
   - multipart/form-data: optional fields `username`, `email`, `password`, `bio`, `isPrivate` (boolean); `profilePicture` as file
   - Updates user profile; if a profile picture is uploaded, it is stored on Cloudinary
@@ -176,14 +179,19 @@ Posts
   - Body (JSON): `{ title, description, isPrivate? (boolean) }`
   - Creates a post.
 - PATCH /api/editpost (auth)
-  - multipart/form-data: requires `postId`; optional `title`, `description`, `isPrivate` (boolean); optional `image` file
+  - Body (multipart/form-data): requires `postId`; optional `title`, `description`, `isPrivate` (boolean); optional `image` file
   - If an image file is provided, it is uploaded to Cloudinary
 - GET /api/getuser/:id (auth)
-  - Returns a specific user's profile and posts.
+  - Returns a specific user's profile and a paginated list of their posts.
   - If the user's profile is private, it is only accessible to their friends.
+  - Supports pagination for posts via `?page` and `?limit` query params.
+  - Supports sorting for posts via `?sort` (field name) and `?order` (`asc`/`desc`) query params.
+  - Each post includes `likesCount` and `commentsCount`.
 - GET /api/posts/:id (auth)
-  - Returns a single post with author, likesCount, and comments.
+  - Returns a single post with author info, `likesCount`, a paginated list of comments, and `commentsCount` (total number of comments).
   - If the post is private (or the author's profile is private), it is only accessible to the owner and their friends.
+  - Supports pagination for comments via `?page` and `?limit` query params.
+  - Supports sorting for comments via `?commentSort` (field name) and `?commentOrder` (`asc`/`desc`) query params.
 - DELETE /api/deletepost/:id (auth)
   - Deletes a post you own, along with all of its associated comments.
 

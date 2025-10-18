@@ -27,10 +27,23 @@ router.get(
 
     // Privacy check as requested
     const requesterId = String(req.user?.id || req.user?._id);
-    const isFriend = Array.from(user.friends || []).map(String).includes(requesterId);
+    const isFriend = Array.from(user.friends || [])
+      .map(String)
+      .includes(requesterId);
     if (user.isPrivate && !isFriend) {
       return next(new AppError("This user's profile is private", 403, true));
     }
+
+    const page = +req.query.page || 1;
+    const limit = +req.query.limit || 10;
+
+    const skip = (page - 1) * limit;
+
+    const sortField = req.query.sort || "createdAt";
+
+    const sortOrder = req.query.order === "desc" ? -1 : 1;
+
+    const sortObj = { [sortField]: sortOrder };
 
     // Use aggregation to get user with posts, comments, and likes count
     const result = await User.aggregate([
@@ -45,49 +58,29 @@ router.get(
           foreignField: "userId",
           as: "posts",
           pipeline: [
-            // Add likes count to each post
+            // Sort, skip, and limit the posts for pagination
+            { $sort: sortObj },
+            { $skip: skip },
+            { $limit: limit },
+            // Add likes and comments count to each post
             {
               $addFields: {
                 likesCount: { $size: "$likes" },
                 isEdited: { $gt: ["$__v", 0] },
               },
             },
-            // Lookup comments for each post
+            // Lookup comments just to get the count
             {
-              $lookup: { 
+              $lookup: {
                 from: "comments",
                 localField: "_id",
                 foreignField: "postId",
                 as: "comments",
-                pipeline: [
-                  // Add user info to each comment
-                  {
-                    $lookup: {
-                      from: "users",
-                      localField: "userId",
-                      foreignField: "_id",
-                      as: "user",
-                      pipeline: [
-                        { $project: { username: 1, profilePicture: 1 } },
-                      ],
-                    },
-                  },
-                  // Add isEdited field to comments
-                  {
-                    $addFields: {
-                      userId: { $arrayElemAt: ["$user", 0] },
-                      isEdited: { $gt: ["$__v", 0] },
-                    },
-                  },
-                  // Remove the temporary user array
-                  { $unset: "user" },
-                  // Sort comments by creation date (newest first)
-                  { $sort: { createdAt: -1 } },
-                ],
               },
             },
-            // Sort posts by creation date (newest first)
-            { $sort: { createdAt: -1 } },
+            // Add commentsCount and then remove the comments array
+            { $addFields: { commentsCount: { $size: "$comments" } } },
+            { $unset: "comments" },
           ],
         },
       },
