@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import Comment from "../../models/Comment.js";
 import Post from "../../models/Post.js";
 import { authMiddleware } from "../../utilities/tokens/accessTokenMiddleware.js";
+import Notification from "../../models/Notification.js";
 import { tryCatch } from "../../utilities/errorHandling/tryCatch.js";
 import AppError from "../../utilities/errorHandling/classObject.js";
 
@@ -33,7 +34,7 @@ router.post(
     }
 
     // Check if post exists
-    const post = await Post.findById(postId);
+    const post = await Post.findById(postId).select("userId");
     if (!post) {
       return next(new AppError("Post not found", 404, true));
     }
@@ -48,10 +49,26 @@ router.post(
     // Save comment to database
     const savedComment = await newComment.save();
 
-    // Add comment to post's comments array
-    await Post.findByIdAndUpdate(postId, {
-      $addToSet: { comments: savedComment._id },
-    });
+    const operations = [
+      // Add comment to post's comments array
+      Post.findByIdAndUpdate(postId, {
+        $addToSet: { comments: savedComment._id },
+      }),
+    ];
+
+    // Only create a notification if someone else comments on the post
+    if (post.userId.toString() !== userId.toString()) {
+      operations.push(
+        Notification.create({
+          userId: post.userId,
+          sender: userId,
+          type: "addComment",
+          message: `${req.user.username} commented on your post.`,
+          route: `/posts/${postId}`,
+        })
+      );
+    }
+    await Promise.all(operations);
 
     // Prepare response with user info from authMiddleware
     const responseComment = {

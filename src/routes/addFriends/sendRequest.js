@@ -2,6 +2,7 @@ import express from "express";
 import mongoose from "mongoose";
 import User from "../../models/User.js";
 import { authMiddleware } from "../../utilities/tokens/accessTokenMiddleware.js";
+import Notification from "../../models/Notification.js";
 import { tryCatch } from "../../utilities/errorHandling/tryCatch.js";
 import AppError from "../../utilities/errorHandling/classObject.js";
 
@@ -65,6 +66,14 @@ router.post(
         $addToSet: { friendRequests: userId },
       }),
       User.findByIdAndUpdate(userId, { $addToSet: { requestsSent: friendId } }),
+      // Create a notification for the user receiving the request
+      Notification.create({
+        userId: friendId, // The user who receives the notification
+        sender: userId, // The user who sent the request
+        type: "friendRequest",
+        message: `${req.user.username} sent you a friend request.`,
+        route: `/users/${userId}`, // Client-side route to the sender's profile
+      }),
     ]);
 
     return res.status(200).json({

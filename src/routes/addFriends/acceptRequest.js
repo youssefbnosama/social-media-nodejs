@@ -2,6 +2,7 @@ import express from "express";
 import mongoose from "mongoose";
 import User from "../../models/User.js";
 import { authMiddleware } from "../../utilities/tokens/accessTokenMiddleware.js";
+import Notification from "../../models/Notification.js";
 import { tryCatch } from "../../utilities/errorHandling/tryCatch.js";
 import AppError from "../../utilities/errorHandling/classObject.js";
 
@@ -56,6 +57,14 @@ router.post(
           $addToSet: { friends: userId },
           $pull: { requestsSent: userId },
         }),
+        // Notify the original sender that their request was accepted
+        Notification.create({
+          userId: friendId,
+          sender: userId,
+          type: "requestAccepted",
+          message: `${req.user.username} accepted your friend request.`,
+          route: `/users/${userId}`,
+        }),
       ]);
 
       return res.status(200).json({
@@ -68,6 +77,14 @@ router.post(
     await Promise.all([
       User.findByIdAndUpdate(userId, { $pull: { friendRequests: friendId } }),
       User.findByIdAndUpdate(friendId, { $pull: { requestsSent: userId } }),
+      // Notify the original sender that their request was declined
+      Notification.create({
+        userId: friendId,
+        sender: userId,
+        type: "requestDeclined",
+        message: `${req.user.username} declined your friend request.`,
+        route: `/users/${userId}`,
+      }),
     ]);
 
     return res.status(200).json({

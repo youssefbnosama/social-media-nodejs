@@ -10,6 +10,7 @@ A Node.js/Express REST API for a simple social media platform. It supports user 
 - **Privacy Controls**: Users can set their profile to private, and individual posts can be marked as private. Access is restricted to the owner and their friends.
 - Friend request workflow (send/cancel request, accept/decline)
 - CRUD for posts (create, edit with optional image upload, view, delete)
+- **Notifications**: Real-time notifications for key events like friend requests, likes, and comments.
 - Likes (toggle like/unlike on a post)
 - Comments (add, edit, delete)
 - Centralized error handling with consistent JSON responses
@@ -30,6 +31,7 @@ A Node.js/Express REST API for a simple social media platform. It supports user 
 src/
   models/
     Comment.js
+    Notification.js
     Post.js
     User.js
   routes/
@@ -50,6 +52,9 @@ src/
     likes/
       main.js
       toggleLike.js
+    notifications/
+      main.js
+      showNotification.js
     posts/
       addPost.js
       deletePost.js
@@ -213,6 +218,13 @@ Comments
   - Body (JSON): { commentId }
   - Deletes your own comment
 
+Notifications
+
+- GET /api/shownotification (auth)
+  - Returns a paginated list of notifications for the logged-in user.
+  - Automatically marks the retrieved notifications as read.
+  - Supports pagination via `?page` and `?limit`.
+
 ## Models (Key Fields)
 
 User
@@ -235,6 +247,15 @@ Comment
 - value (string)
 - userId (User ref)
 - postId (Post ref)
+
+Notification
+
+- userId (User ref, the recipient)
+- sender (User ref, the initiator)
+- type (enum: friendRequest, postLike, requestAccepted, etc.)
+- message (string, human-readable text)
+- route (string, client-side navigation path)
+- isRead (boolean)
 
 ## File Uploads
 

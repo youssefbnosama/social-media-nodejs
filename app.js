@@ -1,6 +1,5 @@
 import express from "express";
 import cors from "cors";
-import path from "path";
 
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
@@ -16,6 +15,7 @@ import addFriends from "./src/routes/addFriends/main.js";
 import posts from "./src/routes/posts/main.js";
 import likes from "./src/routes/likes/main.js";
 import comments from "./src/routes/comments/main.js";
+import notification from "./src/routes/notifications/main.js"
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -49,6 +49,7 @@ app.use(addFriends);
 app.use(posts);
 app.use(likes);
 app.use(comments);
+app.use(notification);
 
 app.use(errorHandler);
 // Start the server

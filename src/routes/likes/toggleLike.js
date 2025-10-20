@@ -2,6 +2,7 @@ import express from "express";
 import mongoose from "mongoose";
 import Post from "../../models/Post.js";
 import { authMiddleware } from "../../utilities/tokens/accessTokenMiddleware.js";
+import Notification from "../../models/Notification.js";
 import { tryCatch } from "../../utilities/errorHandling/tryCatch.js";
 import AppError from "../../utilities/errorHandling/classObject.js";
 
@@ -21,7 +22,7 @@ router.post(
     }
 
     // Find the post
-    const post = await Post.findById(postId);
+    const post = await Post.findById(postId).select("likes userId");
     if (!post) {
       return next(new AppError("Post not found", 404, true));
     }
@@ -43,12 +44,29 @@ router.post(
       );
       message = "Post unliked successfully";
     } else {
-      // Like: add user to likes array
-      updatedPost = await Post.findByIdAndUpdate(
-        postId,
-        { $addToSet: { likes: userId } },
-        { new: true }
-      );
+      // Like: add user to likes array and create notification
+      const operations = [
+        Post.findByIdAndUpdate(
+          postId,
+          { $addToSet: { likes: userId } },
+          { new: true }
+        ),
+      ];
+
+      // Only create a notification if someone else likes the post
+      if (post.userId.toString() !== userId.toString()) {
+        operations.push(
+          Notification.create({
+            userId: post.userId, // The post author receives the notification
+            sender: userId, // The user who liked the post
+            type: "postLike",
+            message: `${req.user.username} liked your post.`,
+            route: `/posts/${postId}`,
+          })
+        );
+      }
+
+      [updatedPost] = await Promise.all(operations);
       message = "Post liked successfully";
     }
 
