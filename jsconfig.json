@@ -1,0 +1,12 @@
+{
+  "typeAcquisition": {
+    "include": ["jest"]
+  },
+  "compilerOptions": {
+    "module": "esnext",
+    "target": "es2020",
+    "moduleResolution": "node",
+    "types": ["jest","node"]
+  },
+  "exclude": ["node_modules"]
+}

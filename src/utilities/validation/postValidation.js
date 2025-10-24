@@ -1,4 +1,5 @@
 import { body } from "express-validator";
+import { stopOnError } from "./validationResult.js";
 
 // Validation rules for creating/updating posts
 export const validatePost = [
@@ -13,6 +14,8 @@ export const validatePost = [
     .trim()
     .isLength({ min: 1, max: 200 })
     .withMessage("Title must be between 1 and 200 characters"),
+    stopOnError,
+  
 
   // Description validation (required)
   body("description")
@@ -25,6 +28,7 @@ export const validatePost = [
     .trim()
     .isLength({ min: 1, max: 1000 })
     .withMessage("Description must be between 1 and 1000 characters"),
+    stopOnError,
 
   // Image validation (optional)
   body("image")
@@ -35,6 +39,7 @@ export const validatePost = [
     .trim()
     .isLength({ min: 1, max: 500 })
     .withMessage("Image URL must be between 1 and 500 characters"),
+    stopOnError,
 
   // isPrivate (optional, boolean, default false)
   body("isPrivate")
@@ -55,6 +60,7 @@ export const validatePostUpdate = [
     .trim()
     .isLength({ min: 1, max: 200 })
     .withMessage("Title must be between 1 and 200 characters"),
+    stopOnError,
 
   // Description validation (optional)
   body("description")
@@ -65,6 +71,7 @@ export const validatePostUpdate = [
     .trim()
     .isLength({ min: 1, max: 1000 })
     .withMessage("Description must be between 1 and 1000 characters"),
+    stopOnError,
 
   // Image validation (optional)
   body("image")
@@ -75,6 +82,7 @@ export const validatePostUpdate = [
     .trim()
     .isLength({ min: 1, max: 500 })
     .withMessage("Image URL must be between 1 and 500 characters"),
+    stopOnError,
 
   // isPrivate (optional, boolean)
   body("isPrivate")
@@ -82,4 +90,5 @@ export const validatePostUpdate = [
     .isBoolean()
     .withMessage("isPrivate must be a boolean")
     .toBoolean(),
+    stopOnError,
 ];

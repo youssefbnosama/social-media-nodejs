@@ -130,6 +130,22 @@ Notes:
 
 Server starts on http://localhost:5000 by default.
 
+## Testing
+
+The project includes a comprehensive suite of integration tests written with `Jest` and `Supertest` to ensure the reliability and security of the authentication endpoints.
+
+To run the tests:
+
+```sh
+npm test
+```
+
+### Test Coverage
+
+-   **User Registration (`POST /api/register`)**: Covers successful user creation and validation for duplicate or invalid data (username, email, password).
+-   **User Login (`POST /api/login`)**: Verifies successful login with JWT cookie issuance, and handles failures for non-existent emails, incorrect passwords, and missing fields.
+-   **User Logout (`POST /api/logout`)**: Confirms that a successful logout clears the `accessToken` and `refreshToken` cookies.
+
 ## Authentication Overview
 
 - On login, the server sets two HttpOnly cookies:
@@ -210,7 +226,7 @@ Comments
 
 - POST /api/addcomment (auth)
   - Body (JSON): { postId, value }
-  - Adds a new comment
+  - Adds a new comment  
 - PATCH /api/editcomment (auth)
   - Body (JSON): { commentId, value }
   - Edits your own comment

@@ -1,26 +1,32 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
-import {v2 as cloudinary} from "cloudinary";
+import { v2 as cloudinary } from "cloudinary";
 
 import mongoose from "mongoose";
 import errorHandler from "./src/utilities/errorHandling/errorHandlerMiddleware.js";
 import refreshTokenRoute from "./src/utilities/tokens/refreshTokenRoute.js";
 
 import form from "./src/routes/form/main.js";
-import user from "./src/routes/user/main.js"; 
+import user from "./src/routes/user/main.js";
 import addFriends from "./src/routes/addFriends/main.js";
 import posts from "./src/routes/posts/main.js";
 import likes from "./src/routes/likes/main.js";
 import comments from "./src/routes/comments/main.js";
-import notification from "./src/routes/notifications/main.js"
+import notification from "./src/routes/notifications/main.js";
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
 // Middleware
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false,
+    crossOriginEmbedderPolicy: false,
+  })
+);
 app.use(express.json());
 app.use(cookieParser());
 dotenv.config();
@@ -32,10 +38,20 @@ app.use(
     credentials: true,
   })
 );
-mongoose
-  .connect("mongodb://127.0.0.1:27017/social-media")
-  .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => console.error("❌ MongoDB connection error:", err));
+
+let uri;
+
+if (process.env.NODE_ENV === "production") {
+  uri = process.env.MONGO_URI_PROD;
+} else if (process.env.NODE_ENV === "development") {
+  uri = process.env.MONGO_URI_LOCAL;
+}
+if (process.env.NODE_ENV !== "test" && uri) {
+  mongoose
+    .connect(uri)
+    .then(() => console.log("MongoDB connected"))
+    .catch((err) => console.error("Connection error:", err));
+}
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -52,7 +68,5 @@ app.use(comments);
 app.use(notification);
 
 app.use(errorHandler);
-// Start the server
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+
+export default app;
