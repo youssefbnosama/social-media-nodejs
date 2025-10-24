@@ -41,14 +41,12 @@ src/
       sendRequest.js
     comments/
       addComment.js
-      deletecComment.js
+      deleteComment.js
       editComment.js
       main.js
     form/
-      login.js
-      logout.js
+      formController.js
       main.js
-      register.js
     likes/
       main.js
       toggleLike.js
@@ -67,6 +65,8 @@ src/
       editProfile.js
       main.js
       profile.js
+  tests/
+    form.test.js
   utilities/
     errorHandling/
       classObject.js
@@ -142,9 +142,9 @@ npm test
 
 ### Test Coverage
 
--   **User Registration (`POST /api/register`)**: Covers successful user creation and validation for duplicate or invalid data (username, email, password).
--   **User Login (`POST /api/login`)**: Verifies successful login with JWT cookie issuance, and handles failures for non-existent emails, incorrect passwords, and missing fields.
--   **User Logout (`POST /api/logout`)**: Confirms that a successful logout clears the `accessToken` and `refreshToken` cookies.
+- **User Registration (`POST /api/register`)**: Covers successful user creation and validation for duplicate or invalid data (username, email, password).
+- **User Login (`POST /api/login`)**: Verifies successful login with JWT cookie issuance, and handles failures for non-existent emails, incorrect passwords, and missing fields.
+- **User Logout (`POST /api/logout`)**: Confirms that a successful logout clears the `accessToken` and `refreshToken` cookies.
 
 ## Authentication Overview
 
@@ -226,7 +226,7 @@ Comments
 
 - POST /api/addcomment (auth)
   - Body (JSON): { postId, value }
-  - Adds a new comment  
+  - Adds a new comment
 - PATCH /api/editcomment (auth)
   - Body (JSON): { commentId, value }
   - Edits your own comment
